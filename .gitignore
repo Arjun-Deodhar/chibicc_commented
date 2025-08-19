@@ -3,4 +3,6 @@
 **/*.o
 **/*.s
 **/a.out
+**/cscope.out
+**/chibicc
 /tmp*
