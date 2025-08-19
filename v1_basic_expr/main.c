@@ -329,7 +329,7 @@ static Node *mul(Token **rest, Token *tok) {
   }
 }
 
-/* primary( )does not contain an inifinte loop because the grammar does
+/* primary() does not contain an inifinte loop because the grammar does
  * not require that feature :)
  */
 // primary = "(" expr ")" | num
@@ -505,6 +505,8 @@ int main(int argc, char **argv) {
   gen_expr(node);
   printf("  ret\n");
 
+  // assert that the depth is zero, meaning that code for the
+  // tree was generated successfully
   assert(depth == 0);
   return 0;
 }

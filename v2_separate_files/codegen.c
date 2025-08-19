@@ -1,5 +1,15 @@
 #include "chibicc.h"
 
+/* changes here are those pertaining to addition of new operators, like
+ * ==, !=, unary - etc...
+ *
+ * this means that the gen_expr() will have more cases in its switch()
+ *
+ * ND_NEG is for negation, indicating the unary minus (unary plus can be ignored)
+ *
+ * for relational operators, cmp instruction will need to be run and then the
+ * flag will be used to set register al
+ */
 static int depth;
 
 static void push(void) {

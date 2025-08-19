@@ -8,6 +8,34 @@ static Node *mul(Token **rest, Token *tok);
 static Node *unary(Token **rest, Token *tok);
 static Node *primary(Token **rest, Token *tok);
 
+/* now we can clearly see the excellent example for generalizing the 
+ * grammar rules for lots of levels of precedence
+ *
+ * for n levels of precedence, we need n + 1 terminals, out of which one
+ * is the highest level (primary) which cannot be "torn apart"
+ *
+ * and at each intermediate level, we typically have 
+ *
+ * nonterm for operator at level x -> uses of operator at level x 
+ * 								      | nonterm for operator at level x + 1
+ *
+ * for example, consider the rule
+ * add = mul ("+" mul | "-" mul)*
+ * here, we have nonterm for add (which is at level x)
+ * mul is at level x + 1, hence there is a nonterm for mul 
+ * further, there are uses of that nonterm "+" mul, "-" mul
+ *
+ * here, current precedence order (lowest to highest) is
+ * equality			=
+ * relational		<=, ==, !=, >=
+ * add_subtract		+, -
+ * mul_divide		*, /
+ * unary_add_sub	+, - but unary
+ * parentheses		()
+ *
+ * here, I am not going to describe the code for each nonterminal, since that
+ * is similar to the previous version that has been commented
+ */
 static Node *new_node(NodeKind kind) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;

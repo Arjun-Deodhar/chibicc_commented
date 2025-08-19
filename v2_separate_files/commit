@@ -1,0 +1,6 @@
+commit 725badfb494544b7c7f1d4c4690b9bc033c6d051
+Author: Rui Ueyama <ruiu@cs.stanford.edu>
+Date:   Wed Oct 7 20:11:16 2020 +0900
+
+    Split main.c into multiple small files
+

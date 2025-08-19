@@ -1,5 +1,12 @@
 #include "chibicc.h"
 
+/* some changes need to be made to the Tokenizer, while reading input chars that
+ * can be punctuators
+ *
+ * this means that some input buffering / looking ahead is required to distinguish
+ * between == and !=, for example...when a = is read
+ */
+
 // Input string
 static char *current_input;
 
