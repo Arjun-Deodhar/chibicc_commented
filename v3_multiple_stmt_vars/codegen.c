@@ -26,6 +26,7 @@ static void gen_addr(Node *node) {
     return;
   }
 
+  // thrown when something like "2 = 4;", "3 = a;" is encountered
   error("not an lvalue");
 }
 
@@ -90,6 +91,7 @@ static void gen_expr(Node *node) {
     return;
   }
 
+  // expression is invalid if none of the cases are matched
   error("invalid expression");
 }
 
@@ -99,6 +101,7 @@ static void gen_stmt(Node *node) {
     return;
   }
 
+  // statement is invalid if none of the cases are matched
   error("invalid statement");
 }
 

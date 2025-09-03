@@ -256,6 +256,8 @@ static Node *primary(Token **rest, Token *tok) {
     return node;
   }
 
+  // if neither of these tokens are match, throw the error that an expression was
+  // expected
   error_tok(tok, "expected an expression");
 }
 

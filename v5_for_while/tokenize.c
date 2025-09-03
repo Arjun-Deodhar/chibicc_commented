@@ -1,19 +1,5 @@
 #include "chibicc.h"
 
-/* since we need to support identifiers, there are new functions 
- * is_ident1() and is_ident2()
- * an identifier is a letter or underscore followed by more letters, underscores
- * or digits
- *
- * is_ident1() just checks for letter and underscore, whereas is_ident2() checks
- * for letter, underscore or digit
- *
- * in the tokenizer()'s loop, an extra case is added for is_ident1(), and if that is
- * true, the remaining identifier is read by calling is_ident2() in a loop until the
- * identifier ends
- *
- * statements are separated by a semicolon, which in this case is just a punctuator
- */
 // Input string
 static char *current_input;
 
@@ -29,32 +15,14 @@ void error(char *fmt, ...) {
 // Reports an error location and exit.
 static void verror_at(char *loc, char *fmt, va_list ap) {
   int pos = loc - current_input;
-  // print the input string
   fprintf(stderr, "%s\n", current_input);
-
-  /* "%*s" means align from left by pos, which is a number
-   * essentially there will be pos - strlen("") spaces from the left, which
-   * is basically pos only
-   *
-   * as a result, pos spaces are printed at the beginning of the line
-   * this is used to align the error caret pointer with the location of the
-   * error in the input string, which is set up by the tokenizer
-   */
   fprintf(stderr, "%*s", pos, ""); // print pos spaces.
   fprintf(stderr, "^ ");
-
-  // now print the message
   vfprintf(stderr, fmt, ap);
   fprintf(stderr, "\n");
   exit(1);
 }
 
-/* just calls va_start() and passes the parameters to verror_at()
- *
- * same for error_tok(), but the only difference is that error_tok()
- * passes the location as a parameter tok->loc while error_at() can 
- * directly pass it
- */ 
 void error_at(char *loc, char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
@@ -74,8 +42,6 @@ bool equal(Token *tok, char *op) {
 
 // Ensure that the current token is `op`.
 Token *skip(Token *tok, char *op) {
-  // throw an error if the token is not equal to the operator specified by op
-  // for example, a missing semicolon
   if (!equal(tok, op))
     error_tok(tok, "expected '%s'", op);
   return tok->next;
@@ -113,7 +79,23 @@ static int read_punct(char *p) {
   return ispunct(*p) ? 1 : 0;
 }
 
-// Tokenize `current_input` and returns new tokens.
+// add while and for keywords
+static bool is_keyword(Token *tok) {
+  static char *kw[] = {"return", "if", "else", "for", "while"};
+
+  for (int i = 0; i < sizeof(kw) / sizeof(*kw); i++)
+    if (equal(tok, kw[i]))
+      return true;
+  return false;
+}
+
+static void convert_keywords(Token *tok) {
+  for (Token *t = tok; t->kind != TK_EOF; t = t->next)
+    if (is_keyword(t))
+      t->kind = TK_KEYWORD;
+}
+
+// Tokenize a given string and returns new tokens.
 Token *tokenize(char *p) {
   current_input = p;
   Token head = {};
@@ -135,7 +117,7 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    // Identifier
+    // Identifier or keyword
     if (is_ident1(*p)) {
       char *start = p;
       do {
@@ -153,11 +135,10 @@ Token *tokenize(char *p) {
       continue;
     }
 
-	// Q: Is it even possible to make the code reach here such that this error
-	// is thrown?
     error_at(p, "invalid token");
   }
 
   cur = cur->next = new_token(TK_EOF, p, p);
+  convert_keywords(head.next);
   return head.next;
 }

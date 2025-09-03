@@ -1,35 +1,7 @@
 #include "chibicc.h"
 
-/* code generator needs to handle 
- *
- * 1. return statements
- * return node in the parse tree will have an expression node as a child
- * basically the code generator needs to generate code for that expression
- * and then just jump to a ret instruction after storing the result of that
- * expression in %rax
- *
- * 2. if statement
- * here, the if node will have a cond, which will be an expr
- * code for expr will need to be generated, after which the value is stored
- * in some register
- *
- * assuming the value is stored in %rax
- * then, a label will need to be generated to skip through all that code
- * for evaluating cond
- *
- * this label must be unique and hence some label generator function will
- * be required
- *
- * if there is an else for the if statement, :) then we need to generate another
- * label to skip over the stmt after the if (expr)
- *
- * 3. null statements
- * these can just be skipped
- */
 static int depth;
 
-/* used to generate unique labels
- */
 static int count(void) {
   static int i = 1;
   return i++;
@@ -59,7 +31,7 @@ static void gen_addr(Node *node) {
     return;
   }
 
-  error("not an lvalue");
+  error_tok(node->tok, "not an lvalue");
 }
 
 // Generate code for a given node.
@@ -123,33 +95,11 @@ static void gen_expr(Node *node) {
     return;
   }
 
-  error("invalid expression");
+  error_tok(node->tok, "invalid expression");
 }
 
 static void gen_stmt(Node *node) {
   switch (node->kind) {
-  /* for an if statement node
-   * generate assembly code for expr statement, such that
-   * result is in %rax
-   *
-   * then, compare the %rax value with 0
-   * if the condition expression evaluates to 0, i.e. the
-   * condition is false, then jump to the else part which is given
-   * by an .L.else.<id> where <id> is some unique number given to 
-   * that else statement
-   *
-   * then, generate assembly code for the then statement (this is a stmt,
-   * and hence can be a block)
-   *
-   * finally, generate an instruction to jump to the .L.end.<id> label 
-   * which will skip over the else part
-   *
-   * insert the .L.else.<id> label here
-   * now, generate code for the else part, similar to the then part
-   * this is done only if the else parse tree exists
-   *
-   * insert the .L.end.<id> label here
-   */
   case ND_IF: {
     int c = count();
     gen_expr(node->cond);
@@ -163,18 +113,39 @@ static void gen_stmt(Node *node) {
     printf(".L.end.%d:\n", c);
     return;
   }
-  /* for a block node, call gen_stmt() for each of the statement
-   * parse trees which are connected in the singly linked list
-   * fashion
-   */
+  case ND_FOR: {
+    int c = count();
+	// if init statement exists, generate code for it
+	// anyways this is to be done once, and hence is not a part of the body of the
+	// loop
+    if (node->init)
+      gen_stmt(node->init);
+	// insert a label indicating the beginning of the loop
+    printf(".L.begin.%d:\n", c);
+
+	// if condiition of termination is there, then generate code for the expression
+	// if the condition is false, i.e. %rax is $0, then jump to the end of the loop
+    if (node->cond) {
+      gen_expr(node->cond);
+      printf("  cmp $0, %%rax\n");
+      printf("  je  .L.end.%d\n", c);
+    }
+
+	// generate the code for the statement representing the body of the loop
+    gen_stmt(node->then);
+
+	// generate code for the increment, which can be viewed as a part of the end of the
+	// body
+    if (node->inc)
+      gen_expr(node->inc);
+    printf("  jmp .L.begin.%d\n", c);
+    printf(".L.end.%d:\n", c);
+    return;
+  }
   case ND_BLOCK:
     for (Node *n = node->body; n; n = n->next)
       gen_stmt(n);
     return;
-  /* for a return node, just geenrate an instruction that jumps to 
-   * ret instruction, label .L.return which will typically be at
-   * the end of the assembly program
-   */
   case ND_RETURN:
     gen_expr(node->lhs);
     printf("  jmp .L.return\n");
@@ -184,7 +155,7 @@ static void gen_stmt(Node *node) {
     return;
   }
 
-  error("invalid statement");
+  error_tok(node->tok, "invalid statement");
 }
 
 // Assign offsets to local variables.
@@ -211,16 +182,7 @@ void codegen(Function *prog) {
   gen_stmt(prog->body);
   assert(depth == 0);
 
-  /* insert label .L.return to which all the return statements in the C
-   * program will jump to
-   */
   printf(".L.return:\n");
-
-  /* calling convetion to deallocate local varialbes and restore the value
-   * of %rsp, thus deallocating the stack frame
-   *
-   * return value is stored in %rax
-   */
   printf("  mov %%rbp, %%rsp\n");
   printf("  pop %%rbp\n");
   printf("  ret\n");

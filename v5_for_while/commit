@@ -1,0 +1,6 @@
+commit 3d8627719be00e39070eaca0ee5b599f2a877c5c
+Author: Rui Ueyama <ruiu@cs.stanford.edu>
+Date:   Sat Sep 26 11:23:04 2020 +0900
+
+    Add a representative node to each Node to improve error messages
+

@@ -52,6 +52,20 @@ struct Token {
 // Input string
 static char *current_input;
 
+/* just prints the error according to fmt (format)
+ *
+ *
+ * va_start(ap, fmt) creates a variable argument list (mostly) starting
+ * at the argument after parameter corresponding to fmt
+ *
+ * then, the va_list can be passed on to vprintf()
+ *
+ * vprintf() which prints the string to stderr according
+ * to the specified format
+ *
+ * also, a newline is printed to stderr after printing the error
+ * message
+ */
 // Reports an error and exit.
 static void error(char *fmt, ...) {
   va_list ap;
@@ -482,10 +496,12 @@ static void gen_expr(Node *node) {
     return;
   }
 
+  // throw an error if none of the nodes are matched
   error("invalid expression");
 }
 
 int main(int argc, char **argv) {
+  // this error has nothing to do with compiling, it is just for i/o
   if (argc != 2)
     error("%s: invalid number of arguments", argv[0]);
 
