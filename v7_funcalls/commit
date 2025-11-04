@@ -1,0 +1,6 @@
+commit aacc0cfec24e0aef1e884ac8b657e182a33a7b1c
+Author: Rui Ueyama <ruiu@cs.stanford.edu>
+Date:   Fri Sep 4 13:39:48 2020 +0900
+
+    Support function definition up to 6 parameters
+
