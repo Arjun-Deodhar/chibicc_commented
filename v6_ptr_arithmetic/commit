@@ -1,0 +1,6 @@
+commit a6bc4ab101c20b6398fd6bbfe124665bb7db5d25
+Author: Rui Ueyama <ruiu@cs.stanford.edu>
+Date:   Fri Sep 4 13:39:06 2020 +0900
+
+    Make pointer arithmetic work
+
