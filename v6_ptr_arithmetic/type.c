@@ -26,6 +26,7 @@ Type *pointer_to(Type *base) {
  * node is NULL, or the type for the node has already been assigned
  */
 void add_type(Node *node) {
+	// return if the node does not exist or the type has already been set
   if (!node || node->ty)
     return;
 

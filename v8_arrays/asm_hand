@@ -1,0 +1,169 @@
+# assembly file created by hand of the following C code
+
+# int fun1(int *a) {
+# 	int x = 1;
+# 	return a[x + 1];
+# }
+#
+# int *fun2(int **a) {
+# 	int z;
+# 	z = 5;
+# 	return *a;
+# }
+#
+# int main() {
+#	int global[4];
+#	global[1] = 2;
+#	return fun2(&global);
+# }
+
+# fun1()
+# XXX offsets are wrong!
+# appearing as -16, -8
+# that's okay, since I used a separate convention
+.globl fun1
+fun1:
+	push %rbp
+	mov %rsp, %rbp
+	sub $16, $rsp
+
+	# calling convention requires that the parameters
+	# need to be passed on the stack and hence we are
+	# allocating 16 bytes, since fn->stack_size is 16
+
+	mov %rdi, 8(%rbp)
+	lea 16(%rbp), %rax
+	push %rax
+	mov $1, %rax
+	pop %rdi
+
+	# basically rdi contains the address of the
+	# variable x, since we are doing x = 5
+	mov %rax, (%rdi)
+
+	# multiplying the index x+1 by the size of the base
+	# type of the array, i.e. 8
+	mov $8, %rax
+	push %rax
+
+	# push 1 on stack
+	mov $1, %rax
+	push %rax
+
+	# add 1 to x
+	lea 16(%rbp), %rax
+
+	# load the value of x into rax
+	mov (%rax), %rax
+	pop %rdi
+
+	add %rdi, %rax
+	pop %rdi
+
+	# multiply x+1 by 8 now and push result on the stack
+	imul %rdi, %rax
+	push %rax
+
+	# now we need to add 8*(x+1) to a
+	# base pointer of array a
+	lea 8(%rbp), %rax
+
+	# XXX: there is this instruction here!
+	# I did not do this, since I thought that a is
+	# of type ARRAY, ubt I forgot that it is the parameter
+	# passed to the function fun1() and thus is a pointer
+	# :)
+	mov (%rax), %rax
+
+	# pop the stack so that 8*(x+1) is in %rdi
+	pop %rdi
+
+	add %rdi, %rax
+
+	# rax contains the address a + 8*(x+1)
+
+	# derefence %rax which essentially is the return value :)
+	# since return is there in C code, jump to the return label
+	# of this function
+	mov (%rax), %rax	
+	jmp .L.return.fun1
+
+	# epilogue of the function fun1, return label is here
+.L.return.fun1:
+	mov %rbp, %rsp
+	pop %rbp
+	ret
+
+	
+	# TODO: code for fun2() assumed to be here
+
+	# main()
+	# offsets are correct here
+	# array global[] has offset -32
+
+.globl main
+main:
+	push %rbp
+	mov %rsp, %rbp
+	sub $32, %rsp
+
+	# first calculate the address of global[1], since
+	# it is the lvalue in the assignment global[1] = 2;
+	mov $8, %rax
+	push %rax
+	mov $1, %rax
+	pop %rdi
+	imul %rdi, %rax
+	# multiplying 8 by 1 to get offset address into the array
+	# push 8 * 1 on the stack for adding to the base address of
+	# the array global[]
+	push %rax
+
+	# generate address for global[]
+	lea -32(%rbp), %rax
+
+	# here, we don't need to do anything in load() since
+	# global[] is actually of type ARRAY
+
+	pop %rdi
+	add %rdi, %rax
+
+	# lvalue in %rax now, push on stack 
+	push %rax
+
+	mov $2, %rax
+
+	# now store 2 in global[1]
+
+	pop %rdi
+	mov %rax, (%rdi)
+
+# now generate code for return fun2(&global);
+
+# code for the function call
+# get address of global[]
+
+	lea -32(%rbp), %rax
+# push that on the stack
+	
+	push %rax
+
+	pop %rdi
+
+# don't know what this is for
+	mov $0, %rax
+	call 
+
+	jmp .L.return.main
+
+.L.return.main:
+	mov %rbp, %rsp
+	pop %rbp
+	ret
+	
+
+
+	
+
+
+	

@@ -1,0 +1,5 @@
+commit 648646bba704745274fcd4fef3b7029c7f7e0fcd
+Author: Rui Ueyama <ruiu@cs.stanford.edu>
+Date:   Tue Aug 6 18:14:53 2019 +0900
+
+    Add [] operator

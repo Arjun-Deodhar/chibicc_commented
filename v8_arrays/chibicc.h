@@ -38,6 +38,7 @@ void error_at(char *loc, char *fmt, ...);
 void error_tok(Token *tok, char *fmt, ...);
 bool equal(Token *tok, char *op);
 Token *skip(Token *tok, char *op);
+bool consume(Token **rest, Token *tok, char *str);
 Token *tokenize(char *input);
 
 //
@@ -49,12 +50,17 @@ typedef struct Obj Obj;
 struct Obj {
   Obj *next;
   char *name; // Variable name
+  Type *ty;   // Type
   int offset; // Offset from RBP
 };
 
 // Function
 typedef struct Function Function;
 struct Function {
+  Function *next;
+  char *name;
+  Obj *params;
+
   Node *body;
   Obj *locals;
   int stack_size;
@@ -78,6 +84,7 @@ typedef enum {
   ND_IF,        // "if"
   ND_FOR,       // "for" or "while"
   ND_BLOCK,     // { ... }
+  ND_FUNCALL,   // Function call
   ND_EXPR_STMT, // Expression statement
   ND_VAR,       // Variable
   ND_NUM,       // Integer
@@ -103,6 +110,10 @@ struct Node {
   // Block
   Node *body;
 
+  // Function call
+  char *funcname;
+  Node *args;
+
   Obj *var;      // Used if kind == ND_VAR
   int val;       // Used if kind == ND_NUM
 };
@@ -113,29 +124,67 @@ Function *parse(Token *tok);
 // type.c
 //
 
-/* types are "int" and "pointer to" of now
- *
- * the Type data structure just stores the kind, and a base pointer
- * which is used to link a pointer type to the type of element that 
- * it points to 
- *
- * base points to another Type structure
- */
 typedef enum {
   TY_INT,
   TY_PTR,
+  TY_FUNC,
+  TY_ARRAY,
 } TypeKind;
 
+/* Type nodes are used to construct type expression trees which 
+ * will be used for assigning types to parse tree nodes, and other
+ * purposes like storing the width of a type while translation and
+ * computing the offsets for local variables
+ *
+ * type checking can also be performed using the type expression tree
+ *
+ * A function's type is the return type along with the type expression
+ * trees for each of the parameters of that function
+ * the parameters' type expression trees are connected together in a 
+ * singly linked list, connected by the next pointer in struct Type
+ *
+ * the parts of the parser that deal with type expression trees are:
+ * declspec(), declarator(), declaration(), type_suffix() etc
+ *
+ * for arrays, a simple pointer is stored to the type of that array
+ * (via Type *base)
+ * and the length of the array is stored in array_len for computing the size
+ * the kind field in the struct Type is TY_ARRAY
+ * 
+ */
 struct Type {
   TypeKind kind;
+  int size;      // sizeof() value
+
+  // Pointer-to or array-of type. We intentionally use the same member
+  // to represent pointer/array duality in C.
+  //
+  // In many contexts in which a pointer is expected, we examine this
+  // member instead of "kind" member to determine whether a type is a
+  // pointer or not. That means in many contexts "array of T" is
+  // naturally handled as if it were "pointer to T", as required by
+  // the C spec.
   Type *base;
+
+  // Declaration
+  Token *name;
+
+  // Array
+  int array_len;
+
+  // Function type
+  Type *return_ty;
+  Type *params;
+  Type *next;
 };
 
-// this is used by other functions in add_type(), for pointing to some
-// common location
 extern Type *ty_int;
 
 bool is_integer(Type *ty);
+Type *copy_type(Type *ty);
+Type *pointer_to(Type *base);
+Type *func_type(Type *return_ty);
+Type *array_of(Type *base, int size);
 void add_type(Node *node);
 
 //

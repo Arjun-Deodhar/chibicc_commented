@@ -1,42 +1,45 @@
 #include "chibicc.h"
 
-/* no major changes over here, except that ty_int is just a 
- * global pointer that is initialised to a 
- * Type struct whose "kind" is TY_INT
- */
-Type *ty_int = &(Type){TY_INT};
+Type *ty_int = &(Type){TY_INT, 8};
 
 bool is_integer(Type *ty) {
   return ty->kind == TY_INT;
 }
 
-/* copies the Type struct ty to ret and returns ret
- */
 Type *copy_type(Type *ty) {
   Type *ret = calloc(1, sizeof(Type));
   *ret = *ty;
   return ret;
 }
 
-/* allocates a Type struct and sets kind to TY_PTR, since it is
- * a pointer, and then sets the base type (what does TY_PTR point to)
- * to the Type specified by "base"
- */
 Type *pointer_to(Type *base) {
   Type *ty = calloc(1, sizeof(Type));
   ty->kind = TY_PTR;
+  ty->size = 8;
   ty->base = base;
   return ty;
 }
 
-/* func_type() allocates a Type struct and sets its kind to TY_FUNC
- * the return type is give as "return_ty", so the ty->return_ty
- * points to that type
- */
 Type *func_type(Type *return_ty) {
   Type *ty = calloc(1, sizeof(Type));
   ty->kind = TY_FUNC;
   ty->return_ty = return_ty;
+  return ty;
+}
+
+/* creates a new TY_ARRAY type with base type "base"
+ * and length "len"
+ *
+ * returns the new type node created
+ * size is computed by the size of the base type times the length
+ * of the array
+ */
+Type *array_of(Type *base, int len) {
+  Type *ty = calloc(1, sizeof(Type));
+  ty->kind = TY_ARRAY;
+  ty->size = base->size * len;
+  ty->base = base;
+  ty->array_len = len;
   return ty;
 }
 
@@ -63,7 +66,12 @@ void add_type(Node *node) {
   case ND_MUL:
   case ND_DIV:
   case ND_NEG:
+    node->ty = node->lhs->ty;
+    return;
   case ND_ASSIGN:
+		// cannot assign something to an array type!
+    if (node->lhs->ty->kind == TY_ARRAY)
+      error_tok(node->lhs->tok, "not an lvalue");
     node->ty = node->lhs->ty;
     return;
   case ND_EQ:
@@ -78,10 +86,13 @@ void add_type(Node *node) {
     node->ty = node->var->ty;
     return;
   case ND_ADDR:
-    node->ty = pointer_to(node->lhs->ty);
+    if (node->lhs->ty->kind == TY_ARRAY)
+      node->ty = pointer_to(node->lhs->ty->base);
+    else
+      node->ty = pointer_to(node->lhs->ty);
     return;
   case ND_DEREF:
-    if (node->lhs->ty->kind != TY_PTR)
+    if (!node->lhs->ty->base)
       error_tok(node->tok, "invalid pointer dereference");
     node->ty = node->lhs->ty->base;
     return;
