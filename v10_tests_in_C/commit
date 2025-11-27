@@ -1,0 +1,5 @@
+commit cd832a311e56bda981c9c957ba45f1bc1f6cc737
+Author: Rui Ueyama <ruiu@cs.stanford.edu>
+Date:   Fri Sep 4 19:03:01 2020 +0900
+
+    Rewrite tests in shell script in C
